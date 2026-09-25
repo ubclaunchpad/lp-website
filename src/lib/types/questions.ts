@@ -54,10 +54,15 @@ export type FormStep = {
 } & BasicForm;
 
 export type Obj = Record<string, string | string[] | null | number | number[]>;
+
+// Status a new application starts in, so it lands in the "To Review" queue
+export const DEFAULT_APPLICATION_STATUS = "review";
+
 export type Application = {
   details: Obj;
   status:
     | "pending"
+    | "review"
     | "submitted"
     | "rejected"
     | "accepted"

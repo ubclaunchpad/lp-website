@@ -11,6 +11,7 @@ import {
 import { db } from "@/db";
 import { getSessionUser, isAdmin } from "@/lib/utils/auth";
 import { formatDate } from "@/lib/utils/dates";
+import { DEFAULT_APPLICATION_STATUS } from "@/lib/types/questions";
 import { redirect } from "next/navigation";
 
 export default async function AdminDashboard() {
@@ -31,7 +32,9 @@ export default async function AdminDashboard() {
   ] = await Promise.all([
     db.forms.count(),
     db.members.count(),
-    db.applications.count({ where: { status: null } }),
+    db.applications.count({
+      where: { status: DEFAULT_APPLICATION_STATUS },
+    }),
     db.submissions.count({ where: { created_at: { gte: startOfMonth } } }),
     db.forms.findFirst({
       where: { type: "recruitment" },
@@ -70,7 +73,7 @@ export default async function AdminDashboard() {
     { label: "Forms", value: totalForms, icon: FileText },
     { label: "Members", value: activeMembers, icon: Users },
     {
-      label: "Pending applications",
+      label: "Applications to review",
       value: pendingApplications,
       icon: UserCheck,
     },

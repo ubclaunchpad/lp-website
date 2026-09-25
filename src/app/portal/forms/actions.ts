@@ -1,7 +1,11 @@
 "use server";
 import { render } from "@react-email/components";
 import { db } from "@/db";
-import { FormStep, Obj } from "@/lib/types/questions";
+import {
+  DEFAULT_APPLICATION_STATUS,
+  FormStep,
+  Obj,
+} from "@/lib/types/questions";
 import { Trigger } from "@/lib/types/forms";
 import { getSessionUser, requireUser, isAdmin } from "@/lib/utils/auth";
 import { JSONValidationToZod } from "@/lib/utils/forms/helpers";
@@ -111,7 +115,7 @@ export async function submitApplication({
   const createApplication = db.applications.create({
     data: {
       id: res.id!,
-      status: null,
+      status: DEFAULT_APPLICATION_STATUS,
       reviewer_id: null,
     },
   });
