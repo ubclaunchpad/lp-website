@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { colonyHeaders } from "@/lib/utils/colony/headers";
 import { getSessionUser } from "@/lib/utils/auth";
+import { getMemberWithTeams, sameUsername } from "@/lib/utils/colony/member";
 
 export async function POST(
   request: NextRequest,
@@ -10,11 +11,28 @@ export async function POST(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { username } = params;
+  const member = await getMemberWithTeams(user.id);
+  if (!member) {
+    return NextResponse.json(
+      { error: "Only members can join the GitHub organization", error_code: "not_a_member" },
+      { status: 403 },
+    );
+  }
+  // Only the GitHub account saved on the member's own profile can be invited.
+  if (!sameUsername(member.github_username, params.username)) {
+    return NextResponse.json(
+      {
+        error: "Save this GitHub username to your profile first",
+        error_code: "username_mismatch",
+      },
+      { status: 403 },
+    );
+  }
+  const username = member.github_username!;
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_COLONY_URL}/colony/github/${username}/invite`,
+      `${process.env.NEXT_PUBLIC_COLONY_URL}/colony/github/${encodeURIComponent(username)}/invite`,
       {
         method: "POST",
         headers: colonyHeaders(),

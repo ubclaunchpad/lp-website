@@ -85,9 +85,11 @@ export default function GithubOnboarding() {
         setGithubSetupState("success");
       } else {
         // Check if user is already in the organization
+        // Colony reports "already a member of the <org> organization"; GitHub's
+        // own wording is "already a part of this organization".
         if (
           inviteData.error &&
-          inviteData.error.includes("already a part of this organization")
+          /already a (member|part) of/.test(inviteData.error)
         ) {
           toast.success("You&apos;re already in the organization!");
           setIsInOrg(true);
@@ -172,7 +174,7 @@ export default function GithubOnboarding() {
           {isInOrg && githubSetupState === "success" ? (
             <div className="flex flex-col items-center w-full gap-4">
               <p className="text-center text-lp-400 font-semibold">
-                ✓ You're all set! You should now have access to the Launch Pad
+                ✓ You&apos;re all set! You should now have access to the Launch Pad
                 GitHub organization.
               </p>
             </div>

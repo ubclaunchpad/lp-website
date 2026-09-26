@@ -2,7 +2,6 @@
 
 import React, { useContext, useState } from "react";
 import { Button } from "@/components/primitives/button";
-import { z } from "zod";
 import { userContext } from "@/lib/context/usercontext";
 import { Input } from "@/components/primitives/input";
 import { toast } from "sonner";
@@ -26,13 +25,6 @@ const TEXT = {
     "Now, let's confirm your Discord username. Only one Discord account can be linked to you. ",
   actionBtn: "Add Discord Roles",
 };
-
-const DiscordIntegrationSchema = z.object({
-  discordUsername: z.string(),
-  actions: z.object({
-    roles: z.array(z.string()),
-  }),
-});
 
 export default function DiscordOnboarding() {
   const { user, userMetadata } = useContext(userContext);
@@ -70,38 +62,10 @@ export default function DiscordOnboarding() {
   }
   const handleGithubSubmit = async () => {
     try {
-      // Must match the Discord role labels exactly; Colony skips unknown names.
-      const roles: string[] = ["2026-2027 Member", "Member"];
-      if (!userMetadata.member?.team_members) {
-        console.error("No team members found");
-        return;
-      }
-      console.log(userMetadata.member?.team_members);
-      for (const member of userMetadata.member?.team_members) {
-        roles.push(...((member as any).teams.meta?.discord?.roles ?? []));
-      }
-
-      const parsed = DiscordIntegrationSchema.safeParse({
-        discordUsername: discordUsername,
-        actions: {
-          roles: roles,
-        },
-      });
-
-      if (!parsed.success) {
-        return;
-      }
+      // The server works out which roles to assign from the member's teams.
       const response = await fetch(
-        `/api/colony/discord/${discordUsername}/roles`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            roles: parsed.data.actions.roles,
-          }),
-        },
+        `/api/colony/discord/${encodeURIComponent(discordUsername)}/roles`,
+        { method: "PUT" },
       );
 
       const responseData = await response.json();
@@ -125,6 +89,10 @@ export default function DiscordOnboarding() {
           case "discord_permission_error":
             errorMessage =
               "Bot doesn't have permission to assign roles. Please contact an administrator.";
+            break;
+          case "not_a_member":
+          case "username_mismatch":
+            errorMessage = responseData.error;
             break;
           case "not_implemented":
             errorMessage = "This feature is not yet available.";
