@@ -49,6 +49,7 @@ export default async function page({
     case "accepted":
     case "declined":
     case "offered":
+    case "paid":
       subpage = <OfferPage form={form} app={app} />;
       break;
     case "pending":

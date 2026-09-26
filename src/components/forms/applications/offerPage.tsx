@@ -11,9 +11,10 @@ export default function OfferPage({ form, app }: { form: Form; app: any }) {
   const [reqStatus, setReqStatus] = useState<"idle" | "loading" | "error">(
     "idle",
   );
+  // A paid member has already accepted; show them the accepted view.
   const [status, setStatus] = useState<
     "offered" | "accepted" | "declined" | "error"
-  >(app.applications.status);
+  >(app.applications.status === "paid" ? "accepted" : app.applications.status);
   const applicationConfig = form.config.application;
   const page = applicationConfig.pages["offerPage"];
   const text = page.content;

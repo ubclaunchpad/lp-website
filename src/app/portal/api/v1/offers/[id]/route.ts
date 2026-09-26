@@ -7,23 +7,42 @@ const newOfferSchema = z.object({
   status: z.enum(["accepted", "declined", "offered", "expired"]),
 });
 
+// Applicants may only answer an outstanding offer; any other transition is admin-only.
+const APPLICANT_DECISIONS = ["accepted", "declined"];
+
 // The applicant may accept/decline their own offer; admins may manage any.
 async function ownerOrAdminGuard(applicationId: string) {
   const user = await getSessionUser();
   if (!user) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return {
+      error: NextResponse.json({ message: "Unauthorized" }, { status: 401 }),
+    };
   }
   if (await isAdmin(user.id)) {
-    return null;
+    return { admin: true };
   }
   const application = await db.applications.findUnique({
     where: { id: applicationId },
     include: { submissions: true },
   });
   if (application?.submissions.user_id !== user.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+    return {
+      error: NextResponse.json({ message: "Unauthorized" }, { status: 403 }),
+    };
   }
-  return null;
+  return { admin: false };
+}
+
+// Form answers are stored as either a string or a single-element array
+// depending on the question type, so normalize before reading.
+function firstValue(value: unknown): string | undefined {
+  const v = Array.isArray(value) ? value[0] : value;
+  return v === undefined || v === null || v === "" ? undefined : String(v);
+}
+
+function toInt(value: unknown): number | null {
+  const n = Number(firstValue(value));
+  return Number.isInteger(n) ? n : null;
 }
 
 // Admin-only guard for dormant pending_members routes
@@ -39,8 +58,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const unauthorized = await ownerOrAdminGuard(params.id);
-  if (unauthorized) return unauthorized;
+  const guard = await ownerOrAdminGuard(params.id);
+  if (guard.error) return guard.error;
   const reqBody = await request.json();
   const offerDetails = newOfferSchema.safeParse(reqBody);
   if (!offerDetails.success) {
@@ -69,6 +88,17 @@ export async function POST(
     return NextResponse.json("Application not found", { status: 404 });
   }
 
+  if (
+    !guard.admin &&
+    (application.status !== "offered" ||
+      !APPLICANT_DECISIONS.includes(offerDetails.data.status))
+  ) {
+    return NextResponse.json(
+      { message: "There is no open offer to respond to" },
+      { status: 409 },
+    );
+  }
+
   try {
     const sessionUser = await getSessionUser();
     await db.$transaction(async (transaction) => {
@@ -90,7 +120,7 @@ export async function POST(
       const userId = application.submissions.user_id;
       const teamId = application.team_id;
       const details = application.submissions.details as {
-        [key: string]: string;
+        [key: string]: unknown;
       };
 
       // If the offer is declined, return early
@@ -110,35 +140,43 @@ export async function POST(
       }
 
       // Upsert member details
+      const gradYear = toInt(details["graduationYear"]);
+      const memberData = {
+        first_name: firstValue(details["firstName"]) ?? "",
+        last_name: firstValue(details["lastName"]) ?? "",
+        faculty: firstValue(details["faculty"]) ?? "",
+        specialization: firstValue(details["specialization"]) ?? "",
+        year_level: toInt(details["year"] ?? details["yearLevel"]),
+      };
       await transaction.members.upsert({
         where: { id: userId },
-        create: {
-          id: userId,
-          first_name: details["firstName"] ?? "",
-          last_name: details["lastName"] ?? "",
-          faculty: details["faculty"]?.[0] ?? "",
-          specialization: details["specialization"]?.[0] ?? "",
-          grad_year: Number(details["graduationYear"]) ?? null,
-          year_level: Number(details["yearLevel"]?.[0]) ?? null,
-        },
+        // grad_year is NOT NULL; the application form requires it, so the
+        // 0 fallback only guards against legacy submissions without one.
+        create: { id: userId, grad_year: gradYear ?? 0, ...memberData },
         update: {
-          first_name: details["firstName"] ?? "",
-          last_name: details["lastName"] ?? "",
-          faculty: details["faculty"]?.[0] ?? "",
-          specialization: details["specialization"]?.[0] ?? "",
-          grad_year: Number(details["graduationYear"]) ?? null,
-          year_level: Number(details["yearLevel"]?.[0]) ?? null,
+          ...memberData,
+          ...(gradYear !== null && { grad_year: gradYear }),
         },
       });
 
-      // Create team member if teamId is provided
+      // Add to the assigned team; upsert so re-accepting doesn't conflict.
       if (teamId) {
-        await transaction.team_members.create({
-          data: {
-            team_id: teamId,
-            member_id: userId,
-            role: details["role"]?.[0] ?? "",
+        const roleName = firstValue(details["role"]);
+        // team_members.role references team_role.name, so drop unknown roles
+        // (e.g. "Engineer") rather than failing the whole acceptance.
+        const role = roleName
+          ? (
+              await transaction.team_role.findUnique({
+                where: { name: roleName },
+              })
+            )?.name ?? null
+          : null;
+        await transaction.team_members.upsert({
+          where: {
+            member_id_team_id: { member_id: userId, team_id: teamId },
           },
+          create: { team_id: teamId, member_id: userId, role },
+          update: { role },
         });
       }
     });

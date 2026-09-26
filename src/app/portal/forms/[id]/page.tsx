@@ -6,10 +6,13 @@ import { Form } from "@/lib/types/application";
 import GenericGreeter from "@/components/layouts/genericGreeter";
 import { MainResultPage } from "@/components/forms/resultPages/MainResultPage";
 
+const OFFER_STATUSES = ["offered", "accepted", "declined", "paid"];
+
 async function getPageData(id: string) {
   const formP = getFormById(Number(id)) as unknown as Promise<Form>;
   const appP = getUserApplication({
     formId: Number(id) as unknown as bigint,
+    includeApp: true,
   });
 
   const [form, app] = await Promise.all([formP, appP]);
@@ -21,6 +24,7 @@ async function getPageData(id: string) {
   return {
     form,
     status: app?.status,
+    appStatus: app?.applications?.status,
     formStatus: isFormOpen(form),
   };
 }
@@ -40,7 +44,13 @@ export default async function Page({
     redirect("/portal/forms");
   }
 
-  const { form, status, formStatus } = pageData;
+  const { form, status, formStatus, appStatus } = pageData;
+
+  // Offers live on the application page; send applicants there so they
+  // don't land on the generic "submitted" screen.
+  if (appStatus && OFFER_STATUSES.includes(appStatus)) {
+    redirect(`/portal/forms/${params.id}/application`);
+  }
 
   return (
     <GenericGreeter spaceBg="scene">
