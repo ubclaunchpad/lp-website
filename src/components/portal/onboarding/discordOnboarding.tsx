@@ -70,14 +70,15 @@ export default function DiscordOnboarding() {
   }
   const handleGithubSubmit = async () => {
     try {
-      const roles: string[] = ["2025-member", "Member"];
+      // Must match the Discord role labels exactly; Colony skips unknown names.
+      const roles: string[] = ["2026-2027 Member", "Member"];
       if (!userMetadata.member?.team_members) {
         console.error("No team members found");
         return;
       }
       console.log(userMetadata.member?.team_members);
       for (const member of userMetadata.member?.team_members) {
-        roles.push(...(member as any).teams.meta.discord.roles);
+        roles.push(...((member as any).teams.meta?.discord?.roles ?? []));
       }
 
       const parsed = DiscordIntegrationSchema.safeParse({
@@ -217,10 +218,9 @@ export default function DiscordOnboarding() {
             <ul className="flex flex-wrap gap-2">
               {userMetadata.member?.team_members &&
                 userMetadata.member.team_members.map((member) => {
-                  const roles: string[] = [];
-                  if (member.teams.meta.discord.roles) {
-                    roles.push(...member.teams.meta.discord.roles);
-                  }
+                  const roles: string[] = [
+                    ...(member.teams.meta?.discord?.roles ?? []),
+                  ];
 
                   return roles.map((role) => (
                     <li
