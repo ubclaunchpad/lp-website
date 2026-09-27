@@ -1,6 +1,51 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils/helpers";
+
+// Matches max-h-80 on the listbox
+const MAX_DROPDOWN_HEIGHT = 320;
+// Matches the h-10 option rows
+const OPTION_HEIGHT = 40;
+// Gap between the trigger and the listbox, plus breathing room from the edge
+const DROPDOWN_GAP = 4;
+const EDGE_PADDING = 8;
+
+type Placement = { openUp: boolean; maxHeight: number };
+
+// Returns the visible area the dropdown can occupy: the viewport, narrowed by
+// every ancestor that clips overflow (e.g. a scrolling dialog body).
+function getVisibleBounds(element: HTMLElement) {
+  let top = 0;
+  let bottom = window.innerHeight;
+  let parent = element.parentElement;
+  while (parent && parent !== document.body) {
+    const { overflowY } = window.getComputedStyle(parent);
+    if (overflowY !== "visible") {
+      const rect = parent.getBoundingClientRect();
+      top = Math.max(top, rect.top);
+      bottom = Math.min(bottom, rect.bottom);
+    }
+    parent = parent.parentElement;
+  }
+  return { top, bottom };
+}
+
+function computePlacement(trigger: HTMLElement, optionCount: number): Placement {
+  const rect = trigger.getBoundingClientRect();
+  const bounds = getVisibleBounds(trigger);
+  const spaceBelow = bounds.bottom - rect.bottom - DROPDOWN_GAP - EDGE_PADDING;
+  const spaceAbove = rect.top - bounds.top - DROPDOWN_GAP - EDGE_PADDING;
+  const desiredHeight = Math.min(
+    MAX_DROPDOWN_HEIGHT,
+    optionCount * OPTION_HEIGHT + 2,
+  );
+  const openUp = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+  const available = openUp ? spaceAbove : spaceBelow;
+  return {
+    openUp,
+    maxHeight: Math.max(OPTION_HEIGHT, Math.min(MAX_DROPDOWN_HEIGHT, available)),
+  };
+}
 
 function OptionsDropdown({
   options,
@@ -9,6 +54,7 @@ function OptionsDropdown({
   allowMultiple,
   onClose,
   listboxId,
+  placement,
 }: {
   options: Record<string, string>[];
   value: (string | number)[];
@@ -16,6 +62,7 @@ function OptionsDropdown({
   allowMultiple: boolean;
   onClose: () => void;
   listboxId: string;
+  placement: Placement;
 }) {
   const [activeIndex, setActiveIndex] = useState(-1);
   const listRef = useRef<HTMLUListElement>(null);
@@ -35,7 +82,12 @@ function OptionsDropdown({
       aria-label="Options"
       aria-multiselectable={allowMultiple}
       tabIndex={-1}
-      className="absolute border border-background-500 top-full mt-1 max-h-80 w-full overflow-y-scroll bg-background-700  flex flex-col rounded  shadow-lg transform overflow-hidden z-50"
+      style={{ maxHeight: placement.maxHeight }}
+      className={cn(
+        "absolute border border-background-500 w-full",
+        placement.openUp ? "bottom-full mb-1" : "top-full mt-1",
+        "overflow-y-auto overflow-x-hidden bg-background-700 flex flex-col rounded shadow-lg transform z-50",
+      )}
     >
       {options.map((option, index) => (
         <li
@@ -144,6 +196,17 @@ export default function MultiSelect({
 
   const listboxId = "multiselect-listbox";
   const ref = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<Placement>({
+    openUp: false,
+    maxHeight: MAX_DROPDOWN_HEIGHT,
+  });
+
+  // Measure before paint so the listbox never flashes on the wrong side
+  useLayoutEffect(() => {
+    if (isOpen && ref.current) {
+      setPlacement(computePlacement(ref.current, options.length));
+    }
+  }, [isOpen, options.length]);
 
   useEffect(() => {
     if (!isOpen && onBlur) {
@@ -199,6 +262,7 @@ export default function MultiSelect({
           allowMultiple={allowMultiple}
           onClose={() => setIsOpen(false)}
           listboxId={listboxId}
+          placement={placement}
         />
       )}
     </div>
