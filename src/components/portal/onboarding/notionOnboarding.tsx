@@ -10,7 +10,7 @@ const TEXT = {
   description:
     "Join the Notion workspace to access the documentation and resources. You must have a Notion account with your UBC email!",
   notionInvite:
-    "https://www.notion.so/launchpadubc/invite/91dcccf9ae274c1723d66ef1c40fc3fa2a2e6799",
+    "https://app.notion.com/team/cb15c003-ed84-4a93-a565-36963591e578/join",
   loadingButton: "Loading...",
   successButton: "You're all set!",
   checkJoin: "Have you joined the Notion workspace?",
