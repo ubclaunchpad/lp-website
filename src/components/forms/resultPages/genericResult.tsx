@@ -66,7 +66,9 @@ const CustomLink = ({ href, text }: { href: string; text: string }) => {
   return (
     <a
       href={href}
-      className="text-white bg-lp-500 px-4 no-underline rounded-full p-1 hover:bg-lp-400  transition-all duration-200"
+      // inline-block so the pill moves to the next line whole instead of
+      // splitting its background across a line break.
+      className="inline-block text-white bg-lp-500 px-4 no-underline rounded-full p-1 hover:bg-lp-400  transition-all duration-200"
       target="_blank"
       rel="noreferrer"
     >
