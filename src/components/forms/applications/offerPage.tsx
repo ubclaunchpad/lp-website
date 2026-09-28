@@ -5,7 +5,6 @@ import { Form } from "@/lib/types/application";
 import { Button } from "@/components/primitives/button";
 import { useContext, useState } from "react";
 import { lpContext } from "@/lib/context/LPContext";
-import Link from "next/link";
 
 export default function OfferPage({ form, app }: { form: Form; app: any }) {
   const [reqStatus, setReqStatus] = useState<"idle" | "loading" | "error">(
@@ -71,14 +70,15 @@ export default function OfferPage({ form, app }: { form: Form; app: any }) {
                     <span className="text-white  ">
                       You have accepted the offer! 🎉{" "}
                     </span>
-                    <Link
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    {/* Plain anchor on purpose: a full page load re-reads the
+                        member record the accept just created, which the portal
+                        layout's cached user context doesn't have yet. */}
+                    <a
                       className="bg-lp-500 p-2 px-4 rounded-full"
-                      href={"/portal/onboarding"}
+                      href="/portal/onboarding"
                     >
                       Click here to continue to the onboarding process
-                    </Link>
+                    </a>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
