@@ -7,6 +7,7 @@ type MailConfig = {
   fromName: string;
   to: string;
   cc?: string;
+  bcc?: string;
   subject: string;
   text?: string;
   html?: string;
@@ -31,6 +32,7 @@ export async function sendEmail(config: MailConfig) {
         ? { html: config.html }
         : { text: config.text ? config.text : "" }),
       ...(config.cc ? { cc: [config.cc] } : {}),
+      ...(config.bcc ? { bcc: [config.bcc] } : {}),
     });
     return res.status === 200;
   } catch (error) {

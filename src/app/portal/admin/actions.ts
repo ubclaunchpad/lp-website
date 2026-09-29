@@ -523,6 +523,8 @@ async function sendStatusEmail({
     subject: rendered.subject,
     html: rendered.html,
     cc: details?.email as string,
+    // Mailgun sends bypass Google Workspace, so keep a copy in the team inbox.
+    bcc: "team@ubclaunchpad.com",
   });
   if (!app.applications) {
     console.log("Application not found");
