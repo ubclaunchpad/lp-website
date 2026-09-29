@@ -1,4 +1,5 @@
 import { Markdown, Html } from "@react-email/components";
+import { EmailFooter } from "./emailFooter";
 
 export function MarkdownTemplate({
   markdown,
@@ -12,6 +13,7 @@ export function MarkdownTemplate({
   return (
     <Html lang="en" dir="ltr">
       <Markdown>{cleanedMarkdown}</Markdown>
+      <EmailFooter />
     </Html>
   );
 }

@@ -1,3 +1,5 @@
+import { EmailFooter } from "./emailFooter";
+
 const DOCS =
   "https://launchpadubc.notion.site/65c5e68a3b1b4d84bcb972f29db80b06?v=a59aebaa79c8408488ccf492b0e1991d&pvs=4";
 
@@ -15,6 +17,7 @@ export function SubmissionTemplate({ formTitle }: { formTitle: string }) {
       <div className="">
         <a href={DOCS}>Click to learn more about UBC Launch Pad</a>
       </div>
+      <EmailFooter />
     </div>
   );
 }
