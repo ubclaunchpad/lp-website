@@ -466,6 +466,83 @@ async function resolveEmailVariables(
   return values;
 }
 
+// Looks up whose booking link an email needs ({{bookingLink}} comes from the
+// applicant's assigned interviewer) and the link they last used, so the
+// Notify dialog can confirm or replace it before previewing.
+export async function getBookingLinkPrompt(
+  submissionId: string,
+  status: string,
+): Promise<
+  | { needed: false }
+  | { needed: true; interviewerName: string; link: string }
+  | { error: string }
+> {
+  await requireAdmin();
+  const submission = await db.submissions.findFirst({
+    where: { id: submissionId },
+    include: { applications: true },
+  });
+  if (!submission) {
+    return { error: "Submission not found" };
+  }
+  const form = await getFormById(submission.form_id);
+  const content: string | undefined = (form?.config as any)?.application
+    ?.emails?.status?.[status]?.content;
+  if (!content || !usedEmailVariables(content).includes("bookingLink")) {
+    return { needed: false };
+  }
+  const interviewerId = submission.applications?.interviewer_id;
+  if (!interviewerId) {
+    return { error: "Assign an interviewer to this applicant first." };
+  }
+  const interviewer = await db.users.findUnique({
+    where: { id: interviewerId },
+    include: { roles: true },
+  });
+  return {
+    needed: true,
+    interviewerName:
+      interviewer?.roles?.display_name || interviewer?.email || "Interviewer",
+    link:
+      getInterviewEmailSettings(form?.config).bookingLinks?.[interviewerId] ??
+      "",
+  };
+}
+
+// Remembers the assigned interviewer's booking link on the form so it's
+// prefilled the next time anyone emails one of their applicants.
+export async function saveBookingLink(
+  submissionId: string,
+  link: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin();
+  const trimmed = link.trim();
+  if (!/^https?:\/\/\S+$/i.test(trimmed)) {
+    return { ok: false, error: "Enter a full link starting with https://" };
+  }
+  const submission = await db.submissions.findFirst({
+    where: { id: submissionId },
+    include: { applications: true },
+  });
+  const interviewerId = submission?.applications?.interviewer_id;
+  if (!submission || !interviewerId) {
+    return { ok: false, error: "Assign an interviewer to this applicant first." };
+  }
+  const form = await db.forms.findUnique({ where: { id: submission.form_id } });
+  if (!form) {
+    return { ok: false, error: "Form not found" };
+  }
+  const config = structuredClone((form.config as any) ?? {});
+  const application = (config.application ??= {});
+  const interviewEmail = (application.interviewEmail ??= {});
+  interviewEmail.bookingLinks = {
+    ...(interviewEmail.bookingLinks ?? {}),
+    [interviewerId]: trimmed,
+  };
+  await db.forms.update({ where: { id: form.id }, data: { config } });
+  return { ok: true };
+}
+
 export async function previewStatusEmail(
   submissionId: string,
   status: string,

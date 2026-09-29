@@ -2,6 +2,8 @@ import { ColumnDef, Row } from "@tanstack/react-table";
 import { useContext, useEffect, useRef, useState } from "react";
 import MultiSelect from "@/components/general/multiSelect";
 import {
+  getBookingLinkPrompt,
+  saveBookingLink,
   sendStatusEmailToUser,
   updateSubmissionField,
 } from "@/app/portal/admin/actions";
@@ -347,8 +349,22 @@ export function createColumns<TData>(
 
 function NotifyButtonForEmail({ row }: { row: any }) {
   const [state, setState] = useState<
-    "idle" | "preview" | "loading" | "sending" | "sent" | "error" | "notemplate"
+    | "idle"
+    | "booking"
+    | "preview"
+    | "loading"
+    | "sending"
+    | "sent"
+    | "error"
+    | "notemplate"
   >("idle");
+  // Emails using {{bookingLink}} first ask for the assigned interviewer's
+  // link, prefilled with the one they used last.
+  const [booking, setBooking] = useState<{
+    interviewerName: string;
+    link: string;
+  } | null>(null);
+  const [savingLink, setSavingLink] = useState(false);
   const [preview, setPreview] = useState<{
     subject: string;
     html: string;
@@ -372,6 +388,38 @@ function NotifyButtonForEmail({ row }: { row: any }) {
   function openPreview() {
     setState("loading");
     setErrorMessage(null);
+    getBookingLinkPrompt(row.original.id, row.original.status)
+      .then((prompt) => {
+        if ("error" in prompt) {
+          setErrorMessage(prompt.error);
+          setState("error");
+        } else if (prompt.needed) {
+          setBooking({
+            interviewerName: prompt.interviewerName,
+            link: prompt.link,
+          });
+          setState("booking");
+        } else {
+          loadPreview();
+        }
+      })
+      .catch(() => setState("error"));
+  }
+
+  async function confirmBookingLink() {
+    if (!booking) return;
+    setSavingLink(true);
+    const saved = await saveBookingLink(row.original.id, booking.link);
+    setSavingLink(false);
+    if (!saved.ok) {
+      toast.error(saved.error);
+      return;
+    }
+    setState("loading");
+    loadPreview();
+  }
+
+  function loadPreview() {
     previewStatusEmail(row.original.id, row.original.status)
       .then((p) => {
         if (!p) {
@@ -425,6 +473,70 @@ function NotifyButtonForEmail({ row }: { row: any }) {
         )}
         {row.original.notified_on ? "Resend" : "Notify"}
       </button>
+      {state === "booking" && booking && (
+        <div
+          className={
+            "fixed inset-0 bg-black bg-opacity-60 z-40 flex items-center justify-center p-4"
+          }
+          onClick={() => setState("idle")}
+        >
+          <div
+            className={
+              "bg-background-800 border border-background-600 rounded-lg p-4 max-w-lg w-full flex flex-col gap-3"
+            }
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">
+                Booking link for{" "}
+                <span className="text-lp-300">{booking.interviewerName}</span>
+              </h3>
+              <button
+                onClick={() => setState("idle")}
+                className="rounded p-1 hover:bg-background-600"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-sm text-neutral-400">
+              {booking.link
+                ? "Using the link saved last time. Keep it or paste a new one."
+                : "Paste the interviewer's booking link (Calendly, Google appointment page, ...). It's saved for next time."}
+            </p>
+            <input
+              type="url"
+              autoFocus
+              value={booking.link}
+              onChange={(e) =>
+                setBooking({ ...booking, link: e.target.value })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") confirmBookingLink();
+              }}
+              placeholder="https://..."
+              className="w-full rounded-md border border-background-500 bg-background-700 p-2 text-sm"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                className="bg-background-600"
+                onClick={() => setState("idle")}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmBookingLink}
+                disabled={savingLink || !booking.link.trim()}
+              >
+                {savingLink && (
+                  <LoaderCircleIcon className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Continue to preview
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {(state === "preview" || state === "sending") && preview && (
         <div
           className={
