@@ -515,16 +515,26 @@ async function sendStatusEmail({
     return;
   }
   const details = app.details ? (app.details as any) : {};
+  const to = app.users.email!.toString();
+  // Applicants sign in with (usually personal) Google accounts; also reach
+  // the student email they gave on the form, unless it's the same address.
+  const studentEmail = (details["student email"] as string | undefined)?.trim();
+  const bcc = [
+    // Mailgun sends bypass Google Workspace, so keep a copy in the team inbox.
+    "team@ubclaunchpad.com",
+    ...(studentEmail?.includes("@") &&
+    studentEmail.toLowerCase() !== to.toLowerCase()
+      ? [studentEmail]
+      : []),
+  ];
 
   await sendEmail({
     from: "no-reply@ubclaunchpad.com",
     fromName: "no-reply UBC Launch Pad",
-    to: app.users.email!.toString(),
+    to,
     subject: rendered.subject,
     html: rendered.html,
-    cc: details?.email as string,
-    // Mailgun sends bypass Google Workspace, so keep a copy in the team inbox.
-    bcc: "team@ubclaunchpad.com",
+    bcc,
   });
   if (!app.applications) {
     console.log("Application not found");
