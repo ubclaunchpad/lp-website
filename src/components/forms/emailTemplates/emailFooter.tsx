@@ -19,7 +19,6 @@ export function EmailFooter() {
         height="92"
         style={{ margin: "0 0 8px" }}
       />
-      <Text style={{ ...muted, fontWeight: 600, margin: 0 }}>UBC Launch Pad</Text>
       <Text style={{ ...muted, margin: 0 }}>
         <Link href="mailto:team@ubclaunchpad.com" style={muted}>
           team@ubclaunchpad.com
