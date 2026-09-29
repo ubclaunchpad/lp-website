@@ -397,6 +397,14 @@ async function renderStatusEmail({
     return null;
   }
 
+  // Accepting an offer creates the applicant's team membership, which drives
+  // their Discord/GitHub onboarding, so an offer without a team is refused.
+  if (status === "offered" && !app.applications?.team_id) {
+    return {
+      error: "Assign a team to this applicant before sending their offer.",
+    };
+  }
+
   const emailTemplate = config.emails.status[status];
   const title = emailTemplate.title;
   const content: string = emailTemplate.content;
