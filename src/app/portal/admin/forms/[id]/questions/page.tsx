@@ -3,6 +3,10 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+  FORM_LINKS,
+  missingLaunchLinks,
+} from "@/lib/utils/forms/emailVariables";
 import { formContext } from "@/components/layouts/formTabView";
 import {
   setFormDates,
@@ -422,6 +426,15 @@ export default function FormQuestionsEditorPage() {
   }
 
   async function handleLaunch() {
+    // Mirrors the server check so the reason is visible (server action errors
+    // are hidden in production).
+    const missing = missingLaunchLinks(rawForm.config);
+    if (missing.length > 0) {
+      toast.error(
+        `Set the ${missing.map((k) => FORM_LINKS[k]).join(", ")} link under Settings → Form links before launching.`,
+      );
+      return;
+    }
     if (dirty) {
       await updateForm(Number(rawForm.id), {
         questions: steps as unknown as object[],

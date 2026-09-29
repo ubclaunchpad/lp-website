@@ -2,6 +2,7 @@
 
 import { FormItem, FormQuestion } from "@/lib/types/questions";
 import formQuestionMapper from "./formMapper";
+import { FormLinks, fillFormLinks } from "@/lib/utils/forms/emailVariables";
 import React from "react";
 
 // Renders markdown-style links ([text](url)) and bare URLs in a question
@@ -47,18 +48,22 @@ export default function FormItemInput({
   questionData,
   question,
   launch = false,
+  links,
 }: {
   expanded?: boolean;
   questionData: FormItem;
   question: FormQuestion;
   launch?: boolean;
+  // Fills {{projectCatalog}} etc.; omitted (e.g. in admin views) to keep tags.
+  links?: FormLinks;
 }) {
+  const label = links ? fillFormLinks(question.label, links) : question.label;
   if (question.type === "info") {
     return (
       <div className="flex flex-col gap-2 w-full">
         <div className="flex gap-2 flex-col w-full">
           <div className="w-full rounded-md border border-white/10 bg-white/[0.03] px-4 py-3">
-            <InfoText text={question.label} />
+            <InfoText text={label} />
           </div>
         </div>
       </div>
@@ -77,7 +82,7 @@ export default function FormItemInput({
               : "w-60 min-w-60 "
           } ${launch ? "font-heading font-semibold text-[15px] text-neutral-200" : ""}`}
         >
-          <span className="">{question.label}</span>
+          <span className="">{label}</span>
           {question.config.validation.isRequired && (
             <span className={launch ? "text-lp-400" : "text-lp-600"}>*</span>
           )}

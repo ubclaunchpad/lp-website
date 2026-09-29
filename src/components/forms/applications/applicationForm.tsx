@@ -11,6 +11,7 @@ import {
   saveApplication,
 } from "@/lib/utils/forms/helpers";
 import { Form } from "@/lib/types/application";
+import { getFormLinks } from "@/lib/utils/forms/emailVariables";
 import { toast } from "sonner";
 import { ZodIssue } from "zod";
 
@@ -100,6 +101,7 @@ export default function ApplicationForm({
         step={formQ[tab]}
         totalSteps={formQ.length}
         formData={formAnswers}
+        links={getFormLinks(applicationForm.config)}
       />
     );
   }

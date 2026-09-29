@@ -10,8 +10,12 @@ import { sendEmail } from "@/lib/utils/forms/email";
 import { MarkdownTemplate } from "@/components/forms/emailTemplates/markdownTemplate";
 import { render } from "@react-email/components";
 import {
+  FORM_LINKS,
+  FormLinkKey,
   STATUS_AFTER_EMAIL,
+  getFormLinks,
   getInterviewEmailSettings,
+  missingLaunchLinks,
   usedEmailVariables,
 } from "@/lib/utils/forms/emailVariables";
 import { object } from "zod";
@@ -53,6 +57,8 @@ export async function cloneForm(id: number) {
   clonedConfig.application = {
     ...(clonedConfig.application ?? {}),
     draft: true,
+    // Term links (catalog, payment, RSVP) must be set fresh for each form.
+    links: {},
   };
   return db.forms.create({
     data: {
@@ -92,6 +98,14 @@ export async function setFormDraft(id: number, draft: boolean) {
     throw new Error("Form not found");
   }
   const config = structuredClone((form.config as any) ?? {});
+  if (!draft) {
+    const missing = missingLaunchLinks(config);
+    if (missing.length > 0) {
+      throw new Error(
+        `Set the ${missing.map((k) => FORM_LINKS[k]).join(", ")} link under Settings → Form links before launching.`,
+      );
+    }
+  }
   config.application = { ...(config.application ?? {}), draft };
   return db.forms.update({
     where: { id: BigInt(id) },
@@ -418,15 +432,16 @@ async function resolveEmailVariables(
   if (used.length === 0) {
     return {};
   }
+  const links = getFormLinks(formConfig);
   const settings = getInterviewEmailSettings(formConfig);
   const values: Record<string, string> = {};
-  const settingsHint = "Add it under Settings → Interview emails.";
+  const settingsHint = "Add it under Settings → Form links.";
 
-  if (used.includes("projectCatalog")) {
-    if (!settings.projectCatalog) {
-      return { error: `No project catalog link is set. ${settingsHint}` };
+  for (const key of used.filter((k): k is FormLinkKey => k in FORM_LINKS)) {
+    if (!links[key]) {
+      return { error: `No ${FORM_LINKS[key]} link is set. ${settingsHint}` };
     }
-    values.projectCatalog = settings.projectCatalog;
+    values[key] = links[key]!;
   }
 
   if (used.includes("interviewerName") || used.includes("bookingLink")) {

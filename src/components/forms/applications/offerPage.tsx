@@ -5,6 +5,7 @@ import { Form } from "@/lib/types/application";
 import { Button } from "@/components/primitives/button";
 import { useContext, useState } from "react";
 import { lpContext } from "@/lib/context/LPContext";
+import { fillFormLinks, getFormLinks } from "@/lib/utils/forms/emailVariables";
 
 export default function OfferPage({ form, app }: { form: Form; app: any }) {
   const [reqStatus, setReqStatus] = useState<"idle" | "loading" | "error">(
@@ -16,7 +17,7 @@ export default function OfferPage({ form, app }: { form: Form; app: any }) {
   >(app.applications.status === "paid" ? "accepted" : app.applications.status);
   const applicationConfig = form.config.application;
   const page = applicationConfig.pages["offerPage"];
-  const text = page.content;
+  const text = fillFormLinks(page.content, getFormLinks(form.config));
   const { details, ...rest } = app;
   const lpData = useContext(lpContext);
   const cleanedText = replaceTemplateValues(text, {

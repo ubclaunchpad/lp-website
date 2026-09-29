@@ -2,7 +2,11 @@
 import { db } from "@/db";
 import { requireAdmin } from "@/lib/utils/auth";
 import { z } from "zod";
-import { InterviewEmailSettings } from "@/lib/utils/forms/emailVariables";
+import {
+  FORM_LINKS,
+  FormLinks,
+  REQUIRED_AT_LAUNCH,
+} from "@/lib/utils/forms/emailVariables";
 
 type EmailTemplate = {
   title: string;
@@ -63,44 +67,64 @@ const httpUrl = z
   .trim()
   .url()
   .refine((u) => /^https?:\/\//i.test(u), "Links must start with http(s)://");
+const optionalUrl = z.union([httpUrl, z.literal("")]);
 
-const InterviewEmailSettingsSchema = z.object({
-  projectCatalog: z.union([httpUrl, z.literal("")]).optional(),
-  bookingLinks: z.record(z.string().uuid(), z.union([httpUrl, z.literal("")])),
+const LinkSettingsSchema = z.object({
+  links: z.object(
+    Object.fromEntries(
+      Object.keys(FORM_LINKS).map((key) => [key, optionalUrl.optional()]),
+    ) as Record<keyof typeof FORM_LINKS, z.ZodOptional<typeof optionalUrl>>,
+  ),
+  bookingLinks: z.record(z.string().uuid(), optionalUrl),
 });
 
-// Saves the per-term values interview emails fill in ({{projectCatalog}},
-// {{bookingLink}}). Returns errors instead of throwing so the UI can show them.
-export async function updateInterviewEmailSettings(
+// Blank fields are dropped so a cleared link reads as "not set".
+function withoutBlanks(record: Record<string, string | undefined>) {
+  return Object.fromEntries(
+    Object.entries(record).filter(([, value]) => value),
+  ) as Record<string, string>;
+}
+
+// Saves the form's term links ({{projectCatalog}}, {{paymentLink}},
+// {{kickoffRsvp}}) and interviewer booking links ({{bookingLink}}). Returns
+// errors instead of throwing so the settings UI can show them.
+export async function updateFormLinkSettings(
   formId: number,
-  settings: InterviewEmailSettings,
+  settings: { links: FormLinks; bookingLinks: Record<string, string> },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   await requireAdmin();
-  const parsed = InterviewEmailSettingsSchema.safeParse(settings);
+  const parsed = LinkSettingsSchema.safeParse(settings);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid settings" };
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid link" };
   }
   const form = await db.forms.findFirst({ where: { id: BigInt(formId) } });
   if (!form) {
     return { ok: false, error: "Form not found" };
   }
   const currentConfig = (form.config as Record<string, any>) || {};
-  // Drop blanks so a cleared field reads as "not set".
-  const bookingLinks = Object.fromEntries(
-    Object.entries(parsed.data.bookingLinks).filter(([, link]) => link),
-  );
+  const application = currentConfig.application ?? {};
+  const links = withoutBlanks(parsed.data.links);
+  // A launched form must keep the links applicants depend on.
+  if (!application.draft) {
+    const missing = REQUIRED_AT_LAUNCH.filter((key) => !links[key]);
+    if (missing.length > 0) {
+      return {
+        ok: false,
+        error: `This form is live, so the ${missing.map((k) => FORM_LINKS[k]).join(", ")} link can't be removed.`,
+      };
+    }
+  }
   await db.forms.update({
     where: { id: BigInt(formId) },
     data: {
       config: {
         ...currentConfig,
         application: {
-          ...currentConfig.application,
+          ...application,
+          links,
           interviewEmail: {
-            ...(parsed.data.projectCatalog && {
-              projectCatalog: parsed.data.projectCatalog,
-            }),
-            bookingLinks,
+            ...(application.interviewEmail ?? {}),
+            bookingLinks: withoutBlanks(parsed.data.bookingLinks),
           },
         },
       },

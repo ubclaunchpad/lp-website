@@ -1,4 +1,5 @@
 import { FormDetails, FormStep } from "@/lib/types/questions";
+import { FormLinks } from "@/lib/utils/forms/emailVariables";
 import FormItemInput from "./formItem";
 import LaunchTrack from "./launch/launchTrack";
 import LaunchRocket from "./launch/launchRocket";
@@ -8,11 +9,13 @@ export default function FormTab({
   step,
   currentStep,
   totalSteps,
+  links,
 }: {
   currentStep: number;
   step: FormStep;
   totalSteps: number;
   formData: FormDetails;
+  links?: FormLinks;
 }) {
   const { title, questions } = step;
   return (
@@ -42,6 +45,7 @@ export default function FormTab({
             questionData={formData[question.id]}
             expanded={false}
             launch
+            links={links}
           />
         ))}
       </div>
