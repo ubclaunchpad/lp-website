@@ -353,12 +353,15 @@ function NotifyButtonForEmail({ row }: { row: any }) {
     subject: string;
     html: string;
   } | null>(null);
+  // Why the email can't be previewed/sent (e.g. missing booking link).
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [sentNote, setSentNote] = useState<string | null>(null);
 
   useEffect(() => {
-    if (state === "sent") {
+    if (state === "sent" || state === "error") {
       const timer = setTimeout(() => {
         setState("idle");
-      }, 5000);
+      }, 8000);
 
       return () => {
         clearTimeout(timer);
@@ -368,13 +371,17 @@ function NotifyButtonForEmail({ row }: { row: any }) {
 
   function openPreview() {
     setState("loading");
+    setErrorMessage(null);
     previewStatusEmail(row.original.id, row.original.status)
       .then((p) => {
-        if (p) {
+        if (!p) {
+          setState("notemplate");
+        } else if ("error" in p) {
+          setErrorMessage(p.error);
+          setState("error");
+        } else {
           setPreview(p);
           setState("preview");
-        } else {
-          setState("notemplate");
         }
       })
       .catch(() => setState("error"));
@@ -382,8 +389,21 @@ function NotifyButtonForEmail({ row }: { row: any }) {
 
   function send() {
     setState("sending");
+    setErrorMessage(null);
     sendStatusEmailToUser(row.original.id, row.original.status)
-      .then(() => setState("sent"))
+      .then((result) => {
+        if (result.ok) {
+          setSentNote(
+            result.newStatus
+              ? `Sent. Status moved to "${result.newStatus}" (refresh to see it).`
+              : "Sent.",
+          );
+          setState("sent");
+        } else {
+          setErrorMessage(result.error);
+          setState("error");
+        }
+      })
       .catch(() => setState("error"));
   }
 
@@ -467,8 +487,13 @@ function NotifyButtonForEmail({ row }: { row: any }) {
         </div>
       )}
       {state === "error" && (
-        <div className="fixed bottom-4 right-4 z-40 bg-background-700 border border-red-600 rounded-lg p-3 text-sm">
-          Failed to load/send the email — try again.
+        <div className="fixed bottom-4 right-4 z-40 bg-background-700 border border-red-600 rounded-lg p-3 text-sm max-w-xs">
+          {errorMessage ?? "Failed to load/send the email — try again."}
+        </div>
+      )}
+      {state === "sent" && sentNote && (
+        <div className="fixed bottom-4 right-4 z-40 bg-background-700 border border-lp-500 rounded-lg p-3 text-sm max-w-xs">
+          {sentNote}
         </div>
       )}
     </>

@@ -9,6 +9,11 @@ import { FormFields } from "@/components/forms/applications/columns";
 import { sendEmail } from "@/lib/utils/forms/email";
 import { MarkdownTemplate } from "@/components/forms/emailTemplates/markdownTemplate";
 import { render } from "@react-email/components";
+import {
+  STATUS_AFTER_EMAIL,
+  getInterviewEmailSettings,
+  usedEmailVariables,
+} from "@/lib/utils/forms/emailVariables";
 import { object } from "zod";
 
 export async function getForms() {
@@ -288,6 +293,7 @@ export async function updateSubmissionField(
           status: value,
           formId: submission.form_id,
           userId: submission.user_id,
+          changedBy: admin.id,
         });
       }
     }
@@ -328,6 +334,10 @@ export async function bulkUpdateSubmissionField(
   return ids.length;
 }
 
+type RenderedEmail = { subject: string; html: string };
+// `error` explains why an email can't go out yet (e.g. no booking link).
+type RenderResult = RenderedEmail | { error: string } | null;
+
 // Renders the status-email template for an applicant without sending.
 async function renderStatusEmail({
   status,
@@ -337,7 +347,7 @@ async function renderStatusEmail({
   status: string;
   formId: bigint;
   userId: string;
-}): Promise<{ subject: string; html: string } | null> {
+}): Promise<RenderResult> {
   const form = await getFormById(formId);
 
   if (!form) {
@@ -375,13 +385,70 @@ async function renderStatusEmail({
 
   const emailTemplate = config.emails.status[status];
   const title = emailTemplate.title;
-  const content = emailTemplate.content;
+  const content: string = emailTemplate.content;
   const details = app.details ? (app.details as any) : {};
+
+  const variables = await resolveEmailVariables(
+    content,
+    formConfig,
+    app.applications?.interviewer_id ?? null,
+  );
+  if ("error" in variables) {
+    return { error: variables.error };
+  }
+
   const template = await render(
-    MarkdownTemplate({ markdown: content, replacements: details }),
+    MarkdownTemplate({
+      markdown: content,
+      replacements: { ...details, ...variables },
+    }),
   );
 
   return { subject: title, html: template };
+}
+
+// Fills the non-applicant tags a template uses, or explains what's missing so
+// an interview email never goes out with a blank booking link.
+async function resolveEmailVariables(
+  content: string,
+  formConfig: any,
+  interviewerId: string | null,
+): Promise<Record<string, string> | { error: string }> {
+  const used = usedEmailVariables(content);
+  if (used.length === 0) {
+    return {};
+  }
+  const settings = getInterviewEmailSettings(formConfig);
+  const values: Record<string, string> = {};
+  const settingsHint = "Add it under Settings → Interview emails.";
+
+  if (used.includes("projectCatalog")) {
+    if (!settings.projectCatalog) {
+      return { error: `No project catalog link is set. ${settingsHint}` };
+    }
+    values.projectCatalog = settings.projectCatalog;
+  }
+
+  if (used.includes("interviewerName") || used.includes("bookingLink")) {
+    if (!interviewerId) {
+      return { error: "Assign an interviewer to this applicant first." };
+    }
+    const interviewer = await db.users.findUnique({
+      where: { id: interviewerId },
+      include: { roles: true },
+    });
+    const name =
+      interviewer?.roles?.display_name || interviewer?.email || "your interviewer";
+    values.interviewerName = name;
+    if (used.includes("bookingLink")) {
+      const link = settings.bookingLinks?.[interviewerId];
+      if (!link) {
+        return { error: `${name} has no booking link yet. ${settingsHint}` };
+      }
+      values.bookingLink = link;
+    }
+  }
+  return values;
 }
 
 export async function previewStatusEmail(
@@ -405,8 +472,8 @@ export async function previewStatusEmail(
 export async function sendStatusEmailToUser(
   submissionId: string,
   value: string,
-) {
-  await requireAdmin();
+): Promise<SendResult> {
+  const admin = await requireAdmin();
   const submission = await db.submissions.findFirst({
     where: {
       id: submissionId,
@@ -414,14 +481,14 @@ export async function sendStatusEmailToUser(
   });
 
   if (!submission) {
-    console.log("Submission not found");
-    return;
+    return { ok: false, error: "Submission not found" };
   }
 
-  await sendStatusEmail({
+  return sendStatusEmail({
     status: value,
     formId: submission.form_id,
     userId: submission.user_id,
+    changedBy: admin.id,
   });
 }
 
@@ -485,19 +552,33 @@ export async function removeAdmin(userId: string) {
   await db.roles.delete({ where: { id: userId } });
 }
 
+// Errors are returned rather than thrown: Next.js hides thrown server-action
+// messages in production, and the admin needs to see why a send was refused.
+type SendResult =
+  | { ok: true; newStatus?: string }
+  | { ok: false; error: string };
+
 async function sendStatusEmail({
   status,
   formId,
   userId,
+  changedBy,
 }: {
   status: string;
   formId: bigint;
   userId: string;
-}) {
+  changedBy?: string;
+}): Promise<SendResult> {
   const rendered = await renderStatusEmail({ status, formId, userId });
 
   if (!rendered) {
-    return;
+    return {
+      ok: false,
+      error: `No email template is configured for "${status}".`,
+    };
+  }
+  if ("error" in rendered) {
+    return { ok: false, error: rendered.error };
   }
   const app = await db.submissions.findFirst({
     where: {
@@ -511,8 +592,7 @@ async function sendStatusEmail({
   });
 
   if (!app) {
-    console.log("Application not found");
-    return;
+    return { ok: false, error: "Application not found" };
   }
   const details = app.details ? (app.details as any) : {};
   const to = app.users.email!.toString();
@@ -525,7 +605,7 @@ async function sendStatusEmail({
       ? studentEmail
       : undefined;
 
-  await sendEmail({
+  const sent = await sendEmail({
     from: "no-reply@ubclaunchpad.com",
     fromName: "no-reply UBC Launch Pad",
     to,
@@ -535,16 +615,45 @@ async function sendStatusEmail({
     // Mailgun sends bypass Google Workspace, so keep a copy in the team inbox.
     bcc: ["team@ubclaunchpad.com"],
   });
-  if (!app.applications) {
-    console.log("Application not found");
-    return;
+  if (!sent) {
+    return {
+      ok: false,
+      error: "The email provider rejected the message. Check the Mailgun logs.",
+    };
   }
+  if (!app.applications) {
+    return { ok: true };
+  }
+
+  // e.g. to_interview -> emailed_for_interview, if the form has that status.
+  const nextStatus = STATUS_AFTER_EMAIL[status];
+  const formStatuses: { id: string }[] =
+    ((await db.forms.findUnique({ where: { id: formId } }))?.config as any)
+      ?.application?.status ?? [];
+  const advance =
+    nextStatus &&
+    app.applications.status === status &&
+    formStatuses.some((s) => s.id === nextStatus);
+
   await db.applications.update({
     where: {
       id: app.applications.id,
     },
     data: {
       notified_on: new Date(),
+      ...(advance && { status: nextStatus }),
     },
   });
+  if (advance) {
+    await db.application_status_history.create({
+      data: {
+        application_id: app.applications.id,
+        old_status: status,
+        new_status: nextStatus,
+        changed_by: changedBy ?? null,
+      },
+    });
+    return { ok: true, newStatus: nextStatus };
+  }
+  return { ok: true };
 }

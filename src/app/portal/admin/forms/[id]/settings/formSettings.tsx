@@ -12,6 +12,7 @@ import { updateOrCreateEmailTemplate } from "./actions";
 import { toast } from "sonner";
 import { Dialog } from "@/components/primitives/dialog";
 import SettingsSection from "./settingsSection";
+import { EMAIL_VARIABLES } from "@/lib/utils/forms/emailVariables";
 
 // Helper function to extract template tags
 const extractTemplateTags = (content: string): string[] => {
@@ -77,6 +78,8 @@ export default function FormSettingsPage() {
         fields[field.id] = field.label;
       },
     );
+    // Filled at send time from Interview emails settings, not from answers.
+    Object.assign(fields, EMAIL_VARIABLES);
     return fields;
   }, [form]);
 
