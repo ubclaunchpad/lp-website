@@ -8,6 +8,7 @@ type MailConfig = {
   to: string;
   cc?: string;
   bcc?: string[];
+  replyTo?: string;
   subject: string;
   text?: string;
   html?: string;
@@ -33,6 +34,7 @@ export async function sendEmail(config: MailConfig) {
         : { text: config.text ? config.text : "" }),
       ...(config.cc ? { cc: [config.cc] } : {}),
       ...(config.bcc?.length ? { bcc: config.bcc } : {}),
+      ...(config.replyTo ? { "h:Reply-To": config.replyTo } : {}),
     });
     return res.status === 200;
   } catch (error) {

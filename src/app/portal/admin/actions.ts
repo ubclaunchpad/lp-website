@@ -706,6 +706,9 @@ async function sendStatusEmail({
     cc,
     // Mailgun sends bypass Google Workspace, so keep a copy in the team inbox.
     bcc: ["team@ubclaunchpad.com"],
+    // Sent from no-reply@; applicants are asked to reply (e.g. to confirm
+    // interviews), so route replies to the team inbox.
+    replyTo: "team@ubclaunchpad.com",
   });
   if (!sent) {
     return {
