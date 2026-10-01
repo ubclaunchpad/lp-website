@@ -6,9 +6,11 @@ import { getStatusHistory } from "@/app/portal/admin/actions";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  ExternalLinkIcon,
   HistoryIcon,
   XIcon,
 } from "lucide-react";
+import { useParams } from "next/navigation";
 
 export default function useApplicantPopover({
   fields,
@@ -20,6 +22,7 @@ export default function useApplicantPopover({
   const [open, setOpen] = useState(false);
   const [applicantId, setApplicantId] = useState<string | null>(null);
   const [history, setHistory] = useState<any[] | null>(null);
+  const formId = useParams<{ id: string }>()?.id;
 
   const index = useMemo(
     () =>
@@ -96,6 +99,16 @@ export default function useApplicantPopover({
               {index + 1} of {rows.length}
             </span>
             <div className="flex gap-1">
+              <a
+                href={`/portal/forms/${formId}/application?applicant=${applicantId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-neutral-300 hover:bg-background-600"
+                title="See this applicant's portal page (read-only)"
+              >
+                <ExternalLinkIcon className="h-3.5 w-3.5" />
+                Portal page
+              </a>
               <button
                 onClick={() => move(-1)}
                 disabled={index <= 0}
@@ -175,7 +188,7 @@ export default function useApplicantPopover({
         </div>
       </div>
     );
-  }, [applicant, open, rows, index, history, fields]);
+  }, [applicant, applicantId, formId, open, rows, index, history, fields]);
 
   return {
     open,

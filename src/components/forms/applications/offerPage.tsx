@@ -7,7 +7,16 @@ import { useContext, useState } from "react";
 import { lpContext } from "@/lib/context/LPContext";
 import { fillFormLinks, getFormLinks } from "@/lib/utils/forms/emailVariables";
 
-export default function OfferPage({ form, app }: { form: Form; app: any }) {
+export default function OfferPage({
+  form,
+  app,
+  preview = false,
+}: {
+  form: Form;
+  app: any;
+  // Admin view: decisions would act on the applicant's behalf, so disable them.
+  preview?: boolean;
+}) {
   const [reqStatus, setReqStatus] = useState<"idle" | "loading" | "error">(
     "idle",
   );
@@ -26,6 +35,7 @@ export default function OfferPage({ form, app }: { form: Form; app: any }) {
   });
 
   async function handleDecision(decision: "accepted" | "declined") {
+    if (preview) return;
     setReqStatus("loading");
     const res = await fetch(`/portal/api/v1/offers/${app.applications.id}`, {
       method: "POST",
@@ -92,7 +102,7 @@ export default function OfferPage({ form, app }: { form: Form; app: any }) {
                     )}
                     <div className="flex pt-10 flex-col lg:flex-row gap-2 w-full [&>*]:flex-1">
                       <Button
-                        disabled={reqStatus === "loading"}
+                        disabled={preview || reqStatus === "loading"}
                         onClick={() => handleDecision("declined")}
                         variant={"secondary"}
                       >
@@ -100,7 +110,7 @@ export default function OfferPage({ form, app }: { form: Form; app: any }) {
                       </Button>
                       <Button
                         onClick={() => handleDecision("accepted")}
-                        disabled={reqStatus === "loading"}
+                        disabled={preview || reqStatus === "loading"}
                       >
                         I Accept
                       </Button>
