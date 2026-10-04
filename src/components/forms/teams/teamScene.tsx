@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { RevealAccent } from "@/lib/utils/forms/teamReveal";
 import { TIMELINE } from "./teamTimeline";
 
@@ -243,7 +244,7 @@ function Accent({ accent, color }: { accent: RevealAccent; color: string }) {
     }
     if (accent === "constellation") {
       // People and labs: a shell of stars joined to their nearest neighbours.
-      const nodes = Array.from({ length: 46 }, () =>
+      const nodes = Array.from({ length: 26 }, () =>
         onSphere(5.4, Math.asin(Math.random() * 2 - 1), Math.random() * Math.PI * 2),
       );
       const edges: [number, number][] = [];
@@ -277,26 +278,28 @@ function Accent({ accent, color }: { accent: RevealAccent; color: string }) {
     return { c, nodes: [], edges: [] as [number, number][] };
   }, [accent, color]);
 
-  const lineGeometry = useMemo(() => {
-    const pts: number[] = [];
-    data.edges.forEach(([a, b]) => {
+  // Edges as thin tubes, merged into one mesh: GL lines are always 1px wide,
+  // which nearly disappears on high-DPI phone screens.
+  const edgeGeometry = useMemo(() => {
+    const radius = accent === "constellation" ? 0.035 : 0.05;
+    const tubes = data.edges.map(([a, b]) => {
       const A = data.nodes[a];
       const B = data.nodes[b];
-      if (accent === "arcs") {
-        const mid = A.clone().add(B).multiplyScalar(0.5).normalize().multiplyScalar(6.2);
-        const curve = new THREE.QuadraticBezierCurve3(A, mid, B);
-        const seg = curve.getPoints(24);
-        for (let i = 0; i < seg.length - 1; i++) {
-          pts.push(...seg[i].toArray(), ...seg[i + 1].toArray());
-        }
-      } else {
-        pts.push(...A.toArray(), ...B.toArray());
-      }
+      const curve =
+        accent === "arcs"
+          ? new THREE.QuadraticBezierCurve3(
+              A,
+              A.clone().add(B).multiplyScalar(0.5).normalize().multiplyScalar(6.4),
+              B,
+            )
+          : new THREE.LineCurve3(A, B);
+      return new THREE.TubeGeometry(curve, accent === "arcs" ? 32 : 2, radius, 6, false);
     });
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
-    return g;
+    return tubes.length ? mergeGeometries(tubes) : null;
   }, [data, accent]);
+
+  // A lighter tint of the team colour so the signature pops off the planet.
+  const bright = useMemo(() => data.c.clone().lerp(new THREE.Color("#ffffff"), 0.35), [data]);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -312,11 +315,19 @@ function Accent({ accent, color }: { accent: RevealAccent; color: string }) {
   if (accent === "rings") {
     return (
       <group ref={group}>
-        {[7.4, 8.4].map((r, i) => (
-          <mesh key={r} rotation={[Math.PI / 2 + 0.35 + i * 0.15, 0.2, 0]}>
-            <torusGeometry args={[r, 0.025, 8, 160]} />
-            <meshBasicMaterial color={data.c} transparent opacity={0.45} />
-          </mesh>
+        {[6.9, 7.9].map((r, i) => (
+          <group key={r} rotation={[Math.PI / 2 + 0.35 + i * 0.18, 0.2, 0]}>
+            <mesh>
+              <torusGeometry args={[r, 0.07, 10, 200]} />
+              <meshBasicMaterial color={bright} transparent opacity={0.8} />
+            </mesh>
+            {[0, 2.1, 4.2].map((a) => (
+              <mesh key={a} position={[Math.cos(a + i) * r, Math.sin(a + i) * r, 0]}>
+                <boxGeometry args={[0.35, 0.35, 0.35]} />
+                <meshBasicMaterial color="#ffffff" />
+              </mesh>
+            ))}
+          </group>
         ))}
       </group>
     );
@@ -324,23 +335,20 @@ function Accent({ accent, color }: { accent: RevealAccent; color: string }) {
 
   return (
     <group ref={group}>
-      <lineSegments geometry={lineGeometry}>
-        <lineBasicMaterial
-          color={data.c}
-          transparent
-          opacity={accent === "constellation" ? 0.35 : 0.6}
-          blending={THREE.AdditiveBlending}
-        />
-      </lineSegments>
+      {edgeGeometry && (
+        <mesh geometry={edgeGeometry}>
+          <meshBasicMaterial color={bright} transparent opacity={0.85} />
+        </mesh>
+      )}
       {data.nodes.map((n, i) =>
         accent === "graph" ? (
           <mesh key={i} position={n} rotation={[0.4, i, 0]}>
-            <boxGeometry args={[0.55, 0.38, 0.38]} />
-            <meshStandardMaterial color={data.c} emissive={data.c} emissiveIntensity={0.35} />
+            <boxGeometry args={[0.75, 0.5, 0.5]} />
+            <meshStandardMaterial color={bright} emissive={data.c} emissiveIntensity={0.6} />
           </mesh>
         ) : (
           <mesh key={i} position={n}>
-            <sphereGeometry args={[accent === "constellation" ? 0.06 : 0.14, 12, 12]} />
+            <sphereGeometry args={[accent === "constellation" ? 0.13 : 0.2, 14, 14]} />
             <meshBasicMaterial color="#ffffff" />
           </mesh>
         ),
@@ -349,7 +357,7 @@ function Accent({ accent, color }: { accent: RevealAccent; color: string }) {
         <group ref={pulses}>
           {Array.from({ length: 6 }, (_, i) => (
             <mesh key={i}>
-              <sphereGeometry args={[0.09, 10, 10]} />
+              <sphereGeometry args={[0.17, 12, 12]} />
               <meshBasicMaterial color="#ffffff" />
             </mesh>
           ))}
