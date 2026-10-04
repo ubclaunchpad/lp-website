@@ -3,6 +3,7 @@ import { useContext, useState } from "react";
 import FormSettingsPage from "./formSettings";
 import DeleteFormSection from "./deleteFormSection";
 import FormLinksSection from "./formLinksSection";
+import TeamRevealSection from "./teamRevealSection";
 import SettingsSection from "./settingsSection";
 import { formContext } from "@/components/layouts/formTabView";
 import { MainResultPage } from "@/components/forms/resultPages/MainResultPage";
@@ -107,6 +108,7 @@ export default function SettingsPage() {
     <div className="dark mx-auto flex w-full max-w-4xl flex-col gap-10 px-4 pb-20 pt-4 md:px-8">
       <FormSettingsPage />
       <FormLinksSection />
+      <TeamRevealSection />
       <ResultPagePreviews form={form} />
       <DeleteFormSection />
     </div>

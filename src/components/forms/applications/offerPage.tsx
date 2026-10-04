@@ -6,6 +6,7 @@ import { Button } from "@/components/primitives/button";
 import { useContext, useState } from "react";
 import { lpContext } from "@/lib/context/LPContext";
 import { fillFormLinks, getFormLinks } from "@/lib/utils/forms/emailVariables";
+import { isTeamRevealOpen } from "@/lib/utils/forms/teamReveal";
 
 export default function OfferPage({
   form,
@@ -90,6 +91,14 @@ export default function OfferPage({
                     >
                       Click here to continue to the onboarding process
                     </a>
+                    {isTeamRevealOpen(form.config) && (
+                      <a
+                        className="rounded-full border border-lp-300 p-2 px-4 text-lp-200 hover:bg-lp-500/20"
+                        href={`/portal/forms/${form.id}/application/teams`}
+                      >
+                        🚀 Reveal my team
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">

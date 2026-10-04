@@ -132,3 +132,29 @@ export async function updateFormLinkSettings(
   });
   return { ok: true };
 }
+
+// Opens/closes the /application/teams reveal for members of this form.
+export async function setTeamRevealOpen(
+  formId: number,
+  open: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin();
+  const form = await db.forms.findFirst({ where: { id: BigInt(formId) } });
+  if (!form) {
+    return { ok: false, error: "Form not found" };
+  }
+  const config = (form.config as Record<string, any>) || {};
+  await db.forms.update({
+    where: { id: BigInt(formId) },
+    data: {
+      config: {
+        ...config,
+        application: {
+          ...config.application,
+          teamReveal: { ...(config.application?.teamReveal ?? {}), open },
+        },
+      },
+    },
+  });
+  return { ok: true };
+}

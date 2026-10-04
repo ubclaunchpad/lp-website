@@ -311,12 +311,32 @@ body {
   animation: fade-up 0.45s ease both;
 }
 
+/* Team reveal: countdown digits punch in, team name letters drop in. */
+@keyframes countdown {
+  0% { opacity: 0; transform: scale(1.8); filter: blur(8px); }
+  25% { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.85); }
+}
+.animate-countdown {
+  animation: countdown 1s ease-out both;
+}
+
+@keyframes letter {
+  from { opacity: 0; transform: translateY(-0.6em) rotate(-8deg); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+.animate-letter {
+  animation: letter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-flame,
   .animate-nebula,
   .animate-twinkle,
   .animate-comet,
-  .animate-fade-up {
+  .animate-fade-up,
+  .animate-countdown,
+  .animate-letter {
     animation: none !important;
   }
 }
