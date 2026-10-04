@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AtSignIcon, CheckIcon, LoaderCircleIcon } from "lucide-react";
 import { instagramUrl, normalizeInstagram } from "@/lib/utils/instagram";
@@ -9,6 +10,8 @@ export default function InstagramForm({ initial }: { initial: string | null }) {
   const [saved, setSaved] = useState(initial);
   const [value, setValue] = useState(initial ?? "");
   const [busy, setBusy] = useState(false);
+  // Re-render the server page so the directory appears/disappears.
+  const router = useRouter();
   const preview = value.trim() ? normalizeInstagram(value) : null;
   const invalid = value.trim() !== "" && !preview;
   const unchanged = preview !== null && preview === saved;
@@ -22,7 +25,8 @@ export default function InstagramForm({ initial }: { initial: string | null }) {
     if (result.ok) {
       setSaved(result.username);
       setValue(result.username ?? "");
-      toast.success("Saved, thanks!");
+      toast.success(saved ? "Updated" : "Saved! Here's everyone else 👇");
+      router.refresh();
     } else {
       toast.error(result.error);
     }
@@ -35,6 +39,7 @@ export default function InstagramForm({ initial }: { initial: string | null }) {
     setSaved(null);
     setValue("");
     toast.success("Removed");
+    router.refresh();
   }
 
   return (
@@ -47,8 +52,9 @@ export default function InstagramForm({ initial }: { initial: string | null }) {
           Share your Instagram
         </h1>
         <p className="text-sm text-neutral-300">
-          Add your Instagram so Launch Pad can tag you in posts and photos.
-          Only club admins can see it.
+          Add yours to see everyone else&apos;s. It&apos;s shared with
+          Launch Pad members who&apos;ve added theirs, and helps us tag you in
+          posts and photos.
         </p>
       </div>
 

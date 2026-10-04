@@ -1,6 +1,5 @@
-import { db } from "@/db";
 import { requireAdmin } from "@/lib/utils/auth";
-import { displayName } from "@/lib/utils/forms/teamReveal";
+import { getInstagramDirectory } from "@/lib/utils/instagramDirectory";
 import { instagramUrl } from "@/lib/utils/instagram";
 import InstagramExport from "./instagramExport";
 
@@ -9,33 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminInstagramPage() {
   // Server-side guard: the admin layout's check is client-only.
   await requireAdmin();
-  const rows = await db.instagram_handles.findMany({
-    orderBy: { updated_at: "desc" },
-    include: {
-      users: {
-        include: {
-          members: true,
-          submissions: { orderBy: { created_at: "desc" }, take: 1 },
-        },
-      },
-    },
-  });
-
-  const handles = rows.map((r) => {
-    const m = r.users.members;
-    const name = m?.first_name
-      ? `${m.first_name} ${m.last_name}`.trim()
-      : r.users.submissions[0]
-        ? displayName(r.users.submissions[0].details)
-        : "";
-    return {
-      name: name || "—",
-      email: r.users.email ?? "",
-      username: r.username,
-      member: Boolean(m),
-      updated: r.updated_at.toISOString(),
-    };
-  });
+  const handles = await getInstagramDirectory();
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 pt-6 md:px-8">
