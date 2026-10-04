@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowUpRight,
+  AtSign,
   BarChart3,
   FileText,
   UserCheck,
@@ -60,6 +61,12 @@ export default async function AdminDashboard() {
       description: "Manage user roles and permissions",
       href: "/portal/admin/users",
       icon: UserCheck,
+    },
+    {
+      title: "Instagram",
+      description: "Instagram handles members have shared",
+      href: "/portal/admin/instagram",
+      icon: AtSign,
     },
     {
       title: "Analytics",

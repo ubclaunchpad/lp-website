@@ -409,6 +409,7 @@ model users {
   applications_applications_reviewer_idTousers    applications[]         @relation("applications_reviewer_idTousers")
   members                                         members?
   roles                                           roles?
+  instagram_handles                               instagram_handles?
   submissions                                     submissions[]
   application_status_history                      application_status_history[]
 
@@ -482,6 +483,18 @@ model members {
   github_username String?        @unique
   users           users          @relation(fields: [id], references: [id])
   team_members    team_members[]
+
+  @@schema("public")
+}
+
+/// Instagram usernames members share via /portal/instagram; one per account, admin-readable.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model instagram_handles {
+  user_id    String   @id @db.Uuid
+  username   String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@schema("public")
 }
