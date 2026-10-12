@@ -27,7 +27,7 @@ export async function updateSession(request: NextRequest) {
           getAll() {
             return request.cookies.getAll();
           },
-          setAll(cookiesToSet) {
+          setAll(cookiesToSet, headers) {
             cookiesToSet.forEach(({ name, value }) =>
               request.cookies.set(name, value),
             );
@@ -41,6 +41,10 @@ export async function updateSession(request: NextRequest) {
                 secure: true,
                 sameSite: "lax",
               }),
+            );
+            // Keep CDNs from caching responses that set auth cookies
+            Object.entries(headers).forEach(([key, value]) =>
+              supabaseResponse.headers.set(key, value),
             );
           },
         },
