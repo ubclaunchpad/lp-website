@@ -1,5 +1,5 @@
-onlyBuiltDependencies:
-  - supabase
-  - prisma
-  - "@prisma/engines"
-  - "@prisma/client"
+allowBuilds:
+  "@prisma/engines": true
+  prisma: true
+  supabase: true
+  unrs-resolver: false
