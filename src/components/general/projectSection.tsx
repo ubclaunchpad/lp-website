@@ -28,23 +28,23 @@ const text = {
 };
 
 const ProjectSection = ({ projects }: ProjectSectionProps) => {
-  const LARGE_SIZE = 1600;
+  const SMALL_DESKTOP_SIZE = 1280;
   const TABLET_SIZE = 900;
   const MOBILE_SIZE = 768;
-  const isLargeScreen = !useIsMobile(LARGE_SIZE);
+  const isSmallDesktop = useIsMobile(SMALL_DESKTOP_SIZE);
   const isTablet = useIsMobile(TABLET_SIZE);
   const isMobile = useIsMobile(MOBILE_SIZE);
   const carouselSize = useMemo(() => {
-    if (isLargeScreen) {
-      return 5;
-    } else if (isTablet) {
+    if (isTablet) {
       return 2;
     } else if (isMobile) {
       return 1;
-    } else {
+    } else if (isSmallDesktop) {
       return 3;
+    } else {
+      return 4;
     }
-  }, [isLargeScreen, isTablet, isMobile]);
+  }, [isSmallDesktop, isTablet, isMobile]);
   return (
     <div className="flex flex-col text-center items-center justify-center md:justify-between py-10 w-full">
       <span className="flex flex-col md:flex-row text-center items-center justify-between md:px-10 py-10 w-full">
@@ -76,7 +76,7 @@ const ProjectSection = ({ projects }: ProjectSectionProps) => {
           {projects.map((project, index) => (
             <SwiperSlide
               key={index}
-              className="flex justify-center items-center min-h-[500px] p-4 w-auto"
+              className="flex justify-center !h-auto p-4 w-auto"
             >
               <ImageCard {...project} />
             </SwiperSlide>

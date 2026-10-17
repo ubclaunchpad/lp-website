@@ -16,31 +16,32 @@ const ImageCard = ({
   description,
   imageSrc,
   alt,
+  width,
+  height,
   url,
 }: ImageCardProps) => {
   return (
     <Link
-      className="flex flex-col flex-1 max-h-[400px] p-2 min-h-[400px] h-full justify-between bg-secondary hover:bg-lp-500 duration-200 hover:scale-105 rounded-2xl py-1 text-white items-center text-center "
+      className="flex flex-col flex-1 p-2 h-full justify-between bg-secondary hover:bg-lp-500 duration-200 hover:scale-105 rounded-2xl text-white items-center text-center"
       target="_blank"
       rel="noopener noreferrer"
       href={url}
     >
-      <div className="py-8 w-full h-full">
-        <h2 className="text-xl font-normal pb-10">{title}</h2>
-        <p className="font-extralight  text-ellipsis overflow-hidden line-clamp-3 px-2">
+      <div className="py-8 w-full">
+        <h2 className="text-xl font-normal pb-6">{title}</h2>
+        <p className="font-extralight leading-6 min-h-[4.5rem] line-clamp-3 px-2">
           {description}
         </p>
       </div>
-      <div className=" w-full overflow-hidden rounded-lg flex-1 relative">
-        <Image
-          src={imageSrc}
-          alt={alt}
-          fill={true}
-          style={{ objectFit: "cover" }}
-          unoptimized
-          className={`rounded overflow-hidden relative `}
-        />
-      </div>
+      {/* Size the box to the image's own aspect ratio so it shows in full */}
+      <Image
+        src={imageSrc}
+        alt={alt}
+        width={width}
+        height={height}
+        unoptimized
+        className="w-full h-auto rounded-lg"
+      />
     </Link>
   );
 };
