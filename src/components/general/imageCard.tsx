@@ -1,25 +1,15 @@
 import Link from "next/link";
-import Image from "next/image";
+import Image, { StaticImageData } from "next/image";
 
-type ImageCardProps = {
+export type ImageCardProps = {
   title: string;
   description: string;
-  imageSrc: string;
+  image: StaticImageData;
   alt: string;
-  width: number;
-  height: number;
   url: string;
 };
 
-const ImageCard = ({
-  title,
-  description,
-  imageSrc,
-  alt,
-  width,
-  height,
-  url,
-}: ImageCardProps) => {
+const ImageCard = ({ title, description, image, alt, url }: ImageCardProps) => {
   return (
     <Link
       className="flex flex-col flex-1 p-2 h-full justify-between bg-secondary hover:bg-lp-500 duration-200 hover:scale-105 rounded-2xl text-white items-center text-center"
@@ -33,12 +23,10 @@ const ImageCard = ({
           {description}
         </p>
       </div>
-      {/* Size the box to the image's own aspect ratio so it shows in full */}
+      {/* The static import carries the image's own width and height, so the box keeps its aspect ratio and shows it in full */}
       <Image
-        src={imageSrc}
+        src={image}
         alt={alt}
-        width={width}
-        height={height}
         unoptimized
         className="w-full h-auto rounded-lg"
       />

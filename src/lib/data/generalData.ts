@@ -1,6 +1,13 @@
 import { Faq } from "@/components/general/faqSection";
 import { NavBarItem } from "@/components/layouts/navbar";
 import { Stat } from "@/components/general/statistics";
+import { Project } from "@/components/general/projectSection";
+import lunarisImage from "../../../public/images/projects/covers/lunaris.webp";
+import threadsenseImage from "../../../public/images/projects/covers/threadsense.webp";
+import neuronImage from "../../../public/images/projects/covers/neuron.webp";
+import i18nilizeImage from "../../../public/images/projects/covers/i18nilize.webp";
+import flowleafletsImage from "../../../public/images/projects/covers/flowleaflets.webp";
+import forumaiImage from "../../../public/images/projects/covers/forumai.webp";
 
 export const faqs: Faq[] = [
   {
@@ -131,65 +138,53 @@ export const statsData: Stat[] = [
   { value: "7+", label: "Majors" },
 ];
 
-export const projects = [
+export const projects: Project[] = [
   {
     title: "Lunaris",
     description:
       "Lunaris is a cloud gaming service that runs games on AWS and streams them straight to the browser, aiming to make PC gaming more affordable and accessible through transparent pricing.",
-    imageSrc: "/images/projects/covers/lunaris.png",
+    image: lunarisImage,
     alt: "Screenshot of the Lunaris game library",
-    width: 1920,
-    height: 1080,
     url: "https://launchpadubc.notion.site/Cloud-Gaming-Platform-2671e489d9208054aa09ecbc9b0c53d9",
   },
   {
     title: "ThreadSense",
     description:
       "ThreadSense is a browser plugin that makes Piazza easier to navigate, search and post on, using LLMs to augment answers, RAG-powered search over past posts and summaries of questions that have already been asked.",
-    imageSrc: "/images/projects/covers/threadsense.png",
+    image: threadsenseImage,
     alt: "Screenshot of the ThreadSense plugin running on Piazza",
-    width: 3690,
-    height: 2010,
     url: "https://launchpadubc.notion.site/Piazza-AI-Plugin-2671e489d92080248ca5f59d60849282",
   },
   {
     title: "Neuron",
     description:
       "A volunteer management system for the BC Brain Wellness Program, with class scheduling, volunteer hour logging and automated shift matching. Built and deployed in 2024-25, then extended in 2025-26 to improve the admin and volunteer flows.",
-    imageSrc: "/images/projects/neuron.png",
+    image: neuronImage,
     alt: "Screenshot of the Neuron volunteer management system",
-    width: 1846,
-    height: 1037,
     url: "https://launchpadubc.notion.site/Neuron-83d2c2b45c9848a7a4b66f2329373431",
   },
   {
     title: "i18nilize",
     description:
       "Small but mighty dev project empowering developers to seamlessly integrate internationalization and localization into microservice architectures. Featuring a central API for managing persistent data, it enables software to adapt effortlessly to multiple languages and cultural norms, making global development more accessible.",
-    imageSrc: "/images/projects/i18nilize.png",
+    image: i18nilizeImage,
     alt: "Screenshot of the i18nilize project",
-    width: 1902,
-    height: 1037,
     url: "https://launchpadubc.notion.site/i18nilize-1d91e489d92080ea8703eb6668589c64",
   },
   {
     title: "Flowleaflets",
     description:
       "An application implementing LLM-powered transcription for handwritten notes in clinical logbooks for digital record keeping, developed in partnership with Flowleaflets, a non-profit",
-    imageSrc: "/images/projects/flowleaflets.png",
+    image: flowleafletsImage,
     alt: "Screenshot of the Flowleaflets clinical logging app",
-    width: 2052,
-    height: 1110,
     url: "https://launchpadubc.notion.site/Clinical-Logging-Software-1d91e489d92080778e8dc1569298d1be",
   },
   {
     title: "ForumAI",
     description:
       "ForumAI combines AI capabilities with structured academic forums, enabling students and faculty to collaborate in a controlled environment where AI assists learning while maintaining academic integrity.",
-    imageSrc: "/images/projects/forumai.png",
+    image: forumaiImage,
     alt: "Screenshot of the ForumAI project",
-    width: 1850,
-    height: 1024,
     url: "https://launchpadubc.notion.site/Forum-32f0c1184540442589417ff156a4f331",
   },
 ];
