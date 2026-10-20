@@ -20,13 +20,14 @@ type NavbarProps = {
 export default function Navbar({ navItems }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrollingUp, setIsScrollingUp] = useState(true);
-  let lastScrollTop = 0;
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   useEffect(() => {
+    let lastScrollTop = 0;
+
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       if (scrollTop > lastScrollTop) {
@@ -54,8 +55,8 @@ export default function Navbar({ navItems }: NavbarProps) {
 
   return (
     <nav
-      className={`flex justify-between items-center w-full p-6 fixed top-0 left-0 right-0 z-50 transition-opacity duration-300 
-        ${isScrollingUp || isMenuOpen ? "opacity-100" : "opacity-0"} ${isMenuOpen ? "bg-[#27232E]" : ""}`}
+      className={`flex justify-between items-center w-full p-6 fixed top-0 left-0 right-0 z-50 transition-[opacity,visibility] duration-300
+        ${isScrollingUp || isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"} ${isMenuOpen ? "bg-[#27232E]" : ""}`}
     >
       <Image src={logo} alt="Logo" width={141} height={49} unoptimized />
       <button
