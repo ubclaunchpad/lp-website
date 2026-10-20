@@ -171,6 +171,47 @@ body {
   }
 }
 
+/* Fade the alumni logos out at both edges instead of clipping them */
+.logo-marquee {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 5%,
+    black 95%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 5%,
+    black 95%,
+    transparent
+  );
+}
+
+/* The track holds the logo list twice, so sliding it by half its width
+   loops seamlessly. It starts shifted left by half and slides back to 0,
+   moving the logos left to right. Retune the duration if logos are added
+   or removed to keep the speed around 50px/s. */
+.logo-marquee-track {
+  animation: logo-marquee 40s linear infinite;
+}
+
+@keyframes logo-marquee {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-marquee-track {
+    animation: none;
+  }
+}
+
 *::-webkit-scrollbar {
   display: none;
 }
