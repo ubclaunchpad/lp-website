@@ -1,5 +1,4 @@
 "use client";
-import InfoButton from "@/components/primitives/infoButton";
 import { Button } from "@/components/primitives/button";
 import ImageCard, { ImageCardProps } from "./imageCard";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -43,7 +42,9 @@ const ProjectSection = ({ projects }: ProjectSectionProps) => {
           </Button>
         </span>
       </span>
-      <span className="flex text-center items-center justify-between lg:px-10 py-10 w-full">
+      {/* Slides have p-4, so this is 16px less than the header's inset to
+          line the cards' edges up with the title */}
+      <span className="flex text-center items-center justify-between md:px-6 py-10 w-full">
         <Swiper
           spaceBetween={10}
           breakpoints={carouselBreakpoints}

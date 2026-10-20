@@ -15,14 +15,17 @@ export default function HeroSection() {
 }
 
 const text = {
-  alum: "Our Alumni have worked as Developers & Designers, and more at",
+  alum: "Our Alumni have worked as Developers, Designers, and more at",
 };
 
 function AlumniSection() {
   return (
-    <div className="flex flex-col py-16 gap-3 w-screen text-center">
-      {text.alum}
-      <div className="w-full white-glow bg-white  overflow-hidden max-w-screen">
+    <div className="w-full max-w-[1340px] mx-auto px-8 pt-32 pb-8">
+      {/* Same column and insets as the about section below, so the
+                caption and logos span from the photo's left edge to the
+                about text's right edge */}
+      <div className="flex flex-col gap-3 px-10 lg:pr-12">
+        <p>{text.alum}</p>
         <AlumniCarousel />
       </div>
     </div>
