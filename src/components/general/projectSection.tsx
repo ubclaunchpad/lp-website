@@ -1,50 +1,31 @@
 "use client";
 import InfoButton from "@/components/primitives/infoButton";
 import { Button } from "@/components/primitives/button";
-import ImageCard from "./imageCard";
+import ImageCard, { ImageCardProps } from "./imageCard";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Navigation } from "swiper/modules";
-import useIsMobile from "@/app/lib/hooks/useIsMobile";
-import { useMemo } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+
+export type Project = ImageCardProps;
 
 type ProjectSectionProps = {
   projects: Project[];
-};
-
-type Project = {
-  title: string;
-  description: string;
-  imageSrc: string;
-  alt: string;
-  width: number;
-  height: number;
-  url: string;
 };
 
 const text = {
   projectsTitle: "Project Highlights",
 };
 
+// Swiper breakpoints are min-widths: 1 slide up to 768px, 2 up to 900px, 3 up to 1280px, then 4
+const carouselBreakpoints = {
+  0: { slidesPerView: 1 },
+  769: { slidesPerView: 2 },
+  901: { slidesPerView: 3 },
+  1281: { slidesPerView: 4 },
+};
+
 const ProjectSection = ({ projects }: ProjectSectionProps) => {
-  const LARGE_SIZE = 1600;
-  const TABLET_SIZE = 900;
-  const MOBILE_SIZE = 768;
-  const isLargeScreen = !useIsMobile(LARGE_SIZE);
-  const isTablet = useIsMobile(TABLET_SIZE);
-  const isMobile = useIsMobile(MOBILE_SIZE);
-  const carouselSize = useMemo(() => {
-    if (isLargeScreen) {
-      return 5;
-    } else if (isTablet) {
-      return 2;
-    } else if (isMobile) {
-      return 1;
-    } else {
-      return 3;
-    }
-  }, [isLargeScreen, isTablet, isMobile]);
   return (
     <div className="flex flex-col text-center items-center justify-center md:justify-between py-10 w-full">
       <span className="flex flex-col md:flex-row text-center items-center justify-between md:px-10 py-10 w-full">
@@ -65,7 +46,7 @@ const ProjectSection = ({ projects }: ProjectSectionProps) => {
       <span className="flex text-center items-center justify-between lg:px-10 py-10 w-full">
         <Swiper
           spaceBetween={10}
-          slidesPerView={carouselSize} // use only 1 slide carousel for mobile
+          breakpoints={carouselBreakpoints}
           loop={true}
           modules={[Navigation]}
           navigation={{
@@ -76,7 +57,7 @@ const ProjectSection = ({ projects }: ProjectSectionProps) => {
           {projects.map((project, index) => (
             <SwiperSlide
               key={index}
-              className="flex justify-center items-center min-h-[500px] p-4 w-auto"
+              className="flex justify-center !h-auto p-4 w-auto"
             >
               <ImageCard {...project} />
             </SwiperSlide>
